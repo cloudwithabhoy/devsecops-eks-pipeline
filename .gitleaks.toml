@@ -1,0 +1,8 @@
+[allowlist]
+  description = "Allowlist for known false positives in OWASP Juice Shop"
+  paths = [
+    '''app/data/static''',
+    '''app/frontend/src/assets''',
+    '''app/data/datacreator.ts''',
+    '''app/lib/insecurity.ts'''
+  ]
