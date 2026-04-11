@@ -1,0 +1,25 @@
+name: DevSecOps pipeline
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  pipeline-info:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: show branch name
+        run: echo "Running on branch ${{ github.ref_name }}"
+
+      - name: show commit details
+        run: |
+          echo "Commit SHA : ${{ github.sha}}"
+          echo "Triggered by : ${{ github.actor }}"
+          echo "Repository : ${{ github.repository }}"
+
+      - name: List project structuer
+        run: ls -la
