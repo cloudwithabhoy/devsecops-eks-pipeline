@@ -23,17 +23,47 @@ resource "aws_kms_key" "eks" {
   deletion_window_in_days = 7
   enable_key_rotation     = true
 
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid = "EnableRootAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid = "AllowEKSEncryiption"
+        Effect = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }]
+  })
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-eks-kms-key"
     Environment = var.environment
   }
 }
-
+data "aws_caller_identity" "current" {}
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = "${var.project_name}-${var.environment}-cluster"
   role_arn = aws_iam_role.eks_cluster.arn
   version  = var.kubernetes_version
+
+  enabled_cluster_log_types = ["api", "audit", "authenticator"]
 
   vpc_config {
     subnet_ids              = var.private_subnet_ids
