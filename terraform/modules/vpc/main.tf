@@ -114,10 +114,23 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
+# KMS key for CloudWatch log group encryption
+resource "aws_kms_key" "vpc_logs" {
+  description             = "KMS key for VPC flow logs encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-vpc-logs-kms-key"
+    Environment = var.environment
+  }
+}
+
 # CloudWatch log group for VPC flow logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/${var.project_name}-${var.environment}-flow-logs"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.vpc_logs.arn
 
   tags = {
     Name        = "${var.project_name}-${var.environment}-vpc-flow-logs"
