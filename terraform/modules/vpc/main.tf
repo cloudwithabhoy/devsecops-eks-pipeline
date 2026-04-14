@@ -120,11 +120,42 @@ resource "aws_kms_key" "vpc_logs" {
   deletion_window_in_days = 7
   enable_key_rotation     = true
 
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EnableRootAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-vpc-logs-kms-key"
     Environment = var.environment
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 # CloudWatch log group for VPC flow logs
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
