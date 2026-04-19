@@ -119,6 +119,7 @@ jobs:
           exit-code: 1
           format: table
           ignore-unfixed: true
+          trivyignores: .trivyignore
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

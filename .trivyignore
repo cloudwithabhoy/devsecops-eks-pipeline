@@ -1,0 +1,16 @@
+# Intentionally vulnerable dependencies in OWASP Juice Shop
+# These are known CVEs in demo/challenge packages — not real app code
+
+# crypto-js - intentionally weak crypto for challenges
+CVE-2023-46233
+
+# jsonwebtoken - intentionally weak JWT for challenges
+CVE-2015-9235
+
+# lodash - intentionally vulnerable for challenges
+CVE-2019-10744
+
+# vm2 - intentionally vulnerable sandbox for challenges
+CVE-2023-32314
+CVE-2023-37466
+CVE-2026-22709
