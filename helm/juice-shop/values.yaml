@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
-  repository: ""
-  tag: 73048f12ce598aa923f474dbe3f23d4c693c8667
+  repository: 637423496001.dkr.ecr.ap-south-1.amazonaws.com/devsecops-eks-dev
+  tag: 8f5537322a0c188d309fd2c09ee98c688e6abec5
   pullPolicy: IfNotPresent
 
 service:
