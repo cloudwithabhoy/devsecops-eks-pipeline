@@ -142,6 +142,8 @@ jobs:
 
       - name: Update image tag in Helm values
         run: |
+          ECR_URL=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/devsecops-eks-dev
+          sed -i "s|repository:.*|repository: $ECR_URL|" helm/juice-shop/values.yaml
           sed -i "s|tag:.*|tag: ${{ github.sha }}|" helm/juice-shop/values.yaml
           git config user.name "github-actions"
           git config user.email "actions@github.com"
