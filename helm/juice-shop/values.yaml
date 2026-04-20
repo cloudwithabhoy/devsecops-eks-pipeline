@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: ""
-  tag: ""
+  tag: 1bc494feeeed44b45fc423aba290bd27c8acd196
   pullPolicy: IfNotPresent
 
 service:
