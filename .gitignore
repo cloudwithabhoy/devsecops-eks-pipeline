@@ -9,7 +9,7 @@
 *.secret
 *.crt
 *.p12
-app/encryptionkeys/
+!app/encryptionkeys/
 
 # -----------------------------------------------
 # Terraform

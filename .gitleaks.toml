@@ -4,5 +4,6 @@
     '''app/data/static''',
     '''app/frontend/src/assets''',
     '''app/data/datacreator.ts''',
-    '''app/lib/insecurity.ts'''
+    '''app/lib/insecurity.ts''',
+    '''app/encryptionkeys'''
   ]
