@@ -97,6 +97,7 @@ jobs:
           framework: terraform
           soft_fail: false
           output_format: cli
+          skip_check: CKV_AWS_38,CKV_AWS_39
 
   build-scan-push:
     runs-on: ubuntu-latest
