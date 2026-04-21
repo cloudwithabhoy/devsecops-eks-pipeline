@@ -7,10 +7,10 @@ RUN npm dedupe --omit=dev
 RUN rm -rf frontend/node_modules
 RUN rm -rf frontend/.angular
 RUN rm -rf frontend/src/assets
-RUN mkdir -p logs ftp i18n frontend/dist
+RUN mkdir -p logs ftp i18n frontend/dist .well-known/csaf && touch .well-known/csaf/provider-metadata.json
 RUN chown -R 65532 logs
-RUN chgrp -R 0 ftp/ frontend/dist/ logs/ data/ i18n/
-RUN chmod -R g=u ftp/ frontend/dist/ logs/ data/ i18n/
+RUN chgrp -R 0 ftp/ frontend/dist/ logs/ data/ i18n/ .well-known/
+RUN chmod -R g=u ftp/ frontend/dist/ logs/ data/ i18n/ .well-known/
 RUN rm data/chatbot/botDefaultTrainingData.json || true
 RUN rm ftp/legal.md || true
 RUN rm i18n/*.json || true
