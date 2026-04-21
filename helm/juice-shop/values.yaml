@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
-  repository: <YOUR_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/devsecops-eks-dev
-  tag: ""
+  repository: 637423496001.dkr.ecr.ap-south-1.amazonaws.com/devsecops-eks-dev
+  tag: 60e72b830caa7ed0b083568a6916bdb557b84630
   pullPolicy: IfNotPresent
 
 service:
