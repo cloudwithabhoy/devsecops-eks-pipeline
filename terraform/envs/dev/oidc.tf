@@ -28,7 +28,7 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:cloudwithabhoy/devsecops-eks-pipeline:*"
+            "token.actions.githubusercontent.com:sub" = "repo:<YOUR_GITHUB_USERNAME>/devsecops-eks-pipeline:*"
           }
         }
       }

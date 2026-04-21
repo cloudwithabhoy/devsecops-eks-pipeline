@@ -1,76 +1,65 @@
 # DevSecOps EKS Pipeline
 
-End-to-end DevSecOps pipeline with GitHub Actions, SonarQube, Trivy, ArgoCD, and Falco — securing a 3-tier app from code to EKS production deployment.
+End-to-end DevSecOps pipeline securing OWASP Juice Shop from code commit to production deployment on AWS EKS — with automated security scanning, GitOps deployment, policy enforcement, and observability.
 
 ---
 
 ## Architecture Overview
 
 ```
-Developer Workstation
-        │
-        ▼
-  GitHub Repository
-        │
-        ▼
- GitHub Actions CI/CD
-  ├── Gitleaks       → Secrets Detection
-  ├── SonarQube      → SAST (Static Code Analysis)
-  ├── Trivy (fs)     → SCA (Dependency Vulnerabilities)
-  ├── Checkov        → IaC Security (Terraform)
+Developer pushes code
+        ↓
+GitHub Repository
+        ↓
+GitHub Actions CI/CD Pipeline
+  ├── Gitleaks       → Secrets detection
+  ├── SonarCloud     → SAST (static code analysis)
+  ├── Trivy (fs)     → SCA (dependency vulnerabilities)
+  ├── Checkov        → IaC security (Terraform)
   ├── Docker Build
-  └── Trivy (image)  → Container Image Scan
-        │
-        ▼ (only if all gates pass)
-    AWS ECR
-  (Container Registry)
-        │
-        ▼
-     ArgoCD
-  (GitOps Deployment)
-        │
-        ▼
+  └── Trivy (image)  → Container image scan
+        ↓
+    AWS ECR (image pushed only if all gates pass)
+        ↓
+     ArgoCD (GitOps — detects new image tag → deploys)
+        ↓
    AWS EKS Cluster
-  ├── Kyverno        → Admission Policy Enforcement
-  ├── Falco          → Runtime Threat Detection
-  └── Vault          → Secrets Management
-        │
-        ▼
- Prometheus + Grafana
-  (Monitoring & Security Dashboards)
+  ├── Kyverno        → Admission policy enforcement
+  └── Juice Shop pods running
+        ↓
+ Prometheus + Grafana (monitoring & dashboards)
 ```
 
 ---
 
 ## Application
 
-**OWASP Juice Shop** — an intentionally vulnerable 3-tier web application used as the target for this DevSecOps pipeline.
+**OWASP Juice Shop** — intentionally vulnerable Node.js web application used as the target for this DevSecOps pipeline.
 
 | Tier | Technology |
 |---|---|
 | Frontend | Angular |
 | Backend | Node.js + Express |
-| Database | PostgreSQL |
+| Database | SQLite |
 
 ---
 
-## DevSecOps Tool Stack
+## Tool Stack
 
 | Category | Tool | Purpose |
 |---|---|---|
-| CI/CD | GitHub Actions | Automated pipeline |
-| Secrets Detection | Gitleaks | Scan for leaked secrets in code |
-| SAST | SonarQube | Static code analysis |
-| SCA + Image Scan | Trivy | Dependency and container scanning |
-| IaC Security | Checkov | Terraform security scanning |
-| Infrastructure | Terraform | EKS cluster provisioning |
-| Container Registry | AWS ECR | Store and scan container images |
-| GitOps | ArgoCD | Automated deployment to EKS |
+| CI/CD | GitHub Actions | Automated 6-stage pipeline |
+| Secrets Detection | Gitleaks | Scan git history for leaked credentials |
+| SAST | SonarCloud | Static code analysis for vulnerabilities |
+| SCA + Image Scan | Trivy | Dependency and container image scanning |
+| IaC Security | Checkov | Terraform misconfiguration scanning |
+| Infrastructure | Terraform | AWS EKS + VPC + ECR provisioning |
+| Container Registry | AWS ECR | Immutable-tagged container image storage |
+| GitOps | ArgoCD | Automated deployment on git change |
 | Packaging | Helm | Kubernetes manifest templating |
 | Policy Enforcement | Kyverno | Kubernetes admission policies |
-| Runtime Security | Falco | Real-time threat detection on EKS |
-| Secrets Management | HashiCorp Vault | Dynamic secrets, no hardcoded credentials |
-| Monitoring | Prometheus + Grafana | Metrics and security dashboards |
+| Secrets Management | HashiCorp Vault | Centralized secrets with K8s auth |
+| Monitoring | Prometheus + Grafana | Cluster metrics and dashboards |
 
 ---
 
@@ -78,93 +67,83 @@ Developer Workstation
 
 ```
 devsecops-eks-pipeline/
-├── app/                        # OWASP Juice Shop application
+├── app/                        # OWASP Juice Shop + Dockerfile
 ├── .github/
-│   └── workflows/              # GitHub Actions pipeline YAMLs
+│   └── workflows/ci.yml        # GitHub Actions pipeline
 ├── terraform/
 │   ├── modules/
-│   │   ├── eks/                # EKS cluster module
-│   │   ├── vpc/                # VPC networking module
-│   │   └── ecr/                # ECR repository module
+│   │   ├── vpc/                # VPC, subnets, NAT Gateway
+│   │   ├── eks/                # EKS cluster + node group
+│   │   └── ecr/                # ECR repository
 │   └── envs/
-│       ├── dev/                # Dev environment config
-│       └── prod/               # Prod environment config
+│       └── dev/                # Dev environment (main.tf, oidc.tf)
 ├── helm/
 │   └── juice-shop/             # Helm chart for Juice Shop
-│       └── templates/          # K8s manifest templates
-├── kyverno-policies/           # Kubernetes admission policies
-├── falco-rules/                # Custom Falco detection rules
+│       └── templates/          # Deployment, Service, Ingress
+├── argocd/
+│   └── application.yaml        # ArgoCD Application manifest
+├── kyverno-policies/           # ClusterPolicy manifests
 ├── vault/
-│   └── policies/               # Vault access policies
+│   └── policies/               # Vault HCL policy + K8s ServiceAccount
 ├── monitoring/
-│   ├── dashboards/             # Grafana dashboard JSONs
-│   └── alerts/                 # Prometheus alert rules
-└── docs/                       # Architecture diagrams and notes
+│   └── prometheus-values.yaml  # kube-prometheus-stack Helm values
+├── docs/
+├── learning_docs/              # Learning notes for each tool
+├── aws-deployment-plan.md      # Step-by-step AWS deployment guide
+├── implementation-guide.md     # Full project implementation details
+└── sonarcloud-setup.md         # SonarCloud setup guide
 ```
 
 ---
 
 ## Pipeline Stages
 
-### Stage 1 — Secrets Detection
-- Tool: **Gitleaks**
-- Scans every commit for hardcoded secrets, API keys, passwords
-- Pipeline fails if any secret is detected
-
-### Stage 2 — Static Code Analysis (SAST)
-- Tool: **SonarQube**
-- Analyzes source code for security vulnerabilities, bugs, code smells
-- Quality gate: pipeline fails on any CRITICAL or BLOCKER issue
-
-### Stage 3 — Dependency Scanning (SCA)
-- Tool: **Trivy (filesystem mode)**
-- Scans `package.json`, `requirements.txt` etc. for known CVEs
-- Pipeline fails on CRITICAL severity findings
-
-### Stage 4 — IaC Security Scanning
-- Tool: **Checkov**
-- Scans Terraform code for misconfigurations before infrastructure is created
-- Pipeline fails on HIGH/CRITICAL policy violations
-
-### Stage 5 — Container Image Build + Scan
-- Tool: **Docker + Trivy (image mode)**
-- Builds Docker image and scans it for OS and library vulnerabilities
-- Pipeline fails on CRITICAL CVEs in the image
-
-### Stage 6 — Push to ECR
-- Only reached if all above stages pass
-- Image pushed to AWS ECR with build SHA as tag
-- No `latest` tag allowed (enforced by Kyverno)
-
-### Stage 7 — GitOps Deployment via ArgoCD
-- ArgoCD detects new image tag in Helm chart
-- Deploys to EKS automatically
-- Kyverno policies validate every manifest before pod creation
+| Stage | Tool | What it checks |
+|---|---|---|
+| 1 — pipeline-info | — | Prints branch, SHA, actor |
+| 2 — secret-scan | Gitleaks | Hardcoded secrets in code + git history |
+| 3 — sast | SonarCloud | Security vulnerabilities, bugs, code smells |
+| 4 — sca | Trivy (fs) | Vulnerable npm dependencies |
+| 5 — iac-scan | Checkov | Terraform misconfigurations |
+| 6 — build-scan-push | Docker + Trivy + ECR | Build image → scan → push to ECR → update Helm values |
 
 ---
 
-## Security Policies (Kyverno)
+## Kyverno Policies
 
-| Policy | Effect |
+| Policy | Action |
 |---|---|
-| Block images not from ECR | Deny |
-| Require non-root containers | Enforce |
-| Require resource limits on all pods | Enforce |
-| Block `latest` image tag | Deny |
-| Require read-only root filesystem | Enforce |
+| `disallow-latest-tag` | Blocks any image tagged `:latest` |
+| `disallow-root-user` | Blocks containers running as root |
+| `require-resource-limits` | Blocks pods without CPU/memory limits |
+
+---
+
+## Security Highlights
+
+- **OIDC auth** — GitHub Actions authenticates to AWS without any stored credentials
+- **KMS encryption** — EKS secrets encrypted at rest
+- **IMDSv2** — EC2 metadata endpoint hardened against SSRF
+- **Distroless base image** — no shell, no package manager in final container
+- **Non-root container** — Juice Shop runs as UID 65532
+- **Immutable ECR tags** — images cannot be overwritten after push
+- **VPC flow logs** — all network traffic audited
 
 ---
 
 ## Getting Started
 
-> Each phase has its own setup guide inside `docs/`
+1. **Read** [implementation-guide.md](implementation-guide.md) to understand the full project
+2. **Follow** [aws-deployment-plan.md](aws-deployment-plan.md) to deploy step-by-step
+3. **Reference** [learning_docs/](learning_docs/) for tool-specific learning notes
 
-- [Phase 1 — GitHub Actions Setup](docs/phase-1-github-actions.md)
-- [Phase 2 — SonarQube Setup](docs/phase-2-sonarqube.md)
-- [Phase 3 — Trivy Setup](docs/phase-3-trivy.md)
-- [Phase 4 — Checkov Setup](docs/phase-4-checkov.md)
-- [Phase 5 — Terraform EKS](docs/phase-5-terraform-eks.md)
-- [Phase 6 — ArgoCD GitOps](docs/phase-6-argocd.md)
-- [Phase 7 — Kyverno + Falco](docs/phase-7-kyverno-falco.md)
-- [Phase 8 — HashiCorp Vault](docs/phase-8-vault.md)
-- [Phase 9 — Prometheus + Grafana](docs/phase-9-monitoring.md)
+> **Cost:** ~$1-2 for a 2-hour session. Destroy immediately after screenshots.
+
+---
+
+## Prerequisites
+
+- AWS account with SSO configured
+- GitHub account with SonarCloud connected
+- Tools installed: AWS CLI, Terraform, kubectl, Helm
+- GitHub Secrets set: `AWS_ROLE_ARN`, `AWS_ACCOUNT_ID`, `SONAR_TOKEN`
